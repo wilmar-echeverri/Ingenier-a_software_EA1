@@ -32,7 +32,8 @@ if usuarios_registrados:
     for usuario in usuarios_registrados:
         col1, col2 = st.columns([4,1])
         col1.write(usuario)
-        if col2.button("Eliminar", key=f"eliminar_usuario_{usuario}"):
+        eliminar = col2.button("Eliminar", key=f"eliminar_usuario_{usuario}")
+        if eliminar:
             Usuario.eliminar_usuario(usuario)
             st.warning(f"Usuario '{usuario}' eliminado.")
             st.experimental_rerun()
