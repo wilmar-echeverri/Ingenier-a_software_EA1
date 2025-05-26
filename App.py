@@ -7,12 +7,7 @@ from Database.Models.Celda import Celda
 from Database.setup import crear_tablas
 import datetime
 
-# Crear tablas si no existen
-def setup_app():
-    crear_tablas()
-    inicializar_celdas()
-setup_app()
-
+# Inicializar celdas en la base de datos
 def inicializar_celdas():
     from Database.Models.Celda import Celda
     import sqlite3
@@ -31,6 +26,12 @@ def inicializar_celdas():
             cursor.execute("INSERT INTO Celda (ID_Celda, Tipo, Estado) VALUES (?, ?, ?)", (nombre, "moto", "disponible"))
         conn.commit()
     conn.close()
+
+# Crear tablas si no existen
+def setup_app():
+    crear_tablas()
+    inicializar_celdas()
+setup_app()
 
 st.title("Gestión de Parqueadero Colombia")
 
