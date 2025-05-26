@@ -139,6 +139,7 @@ def mostrar_tabla(registros):
 
     # Filas de registros
     for idx, reg in enumerate(registros):
+        unique_id = f"{reg.get('id','')}_{reg.get('placa','')}_{reg.get('id_celda','')}_{idx}"
         col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
 
         col1.write(reg.get('placa', 'N/A'))
@@ -160,14 +161,14 @@ def mostrar_tabla(registros):
 
         # Botón para registrar salida
         if not reg['hora_salida']:
-            if col7.button("Registrar salida", key=f"salida_{reg['id']}_{idx}_tabla"):
+            if col7.button("Registrar salida", key=f"salida_{unique_id}"):
                 Registro.registrar_salida(reg['id'])
                 st.success(f"Salida registrada para {reg['placa']}")
         else:
             col7.write("✅")
 
         # Botón para eliminar
-        if col8.button("🗑️", key=f"eliminar_{reg['id']}_{idx}_tabla"):
+        if col8.button("🗑️", key=f"eliminar_{unique_id}"):
             Registro.eliminar_registro(reg['id'])
             st.warning(f"Registro de {reg['placa']} eliminado.")
 
