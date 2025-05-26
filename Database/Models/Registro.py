@@ -9,9 +9,10 @@ class Registro:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT Registro.ID_Registro, Vehiculo.Placa, Vehiculo.Tipo, Vehiculo.Usuario, 
-                   Registro.Fecha_Entrada, Registro.Hora_Entrada, Registro.Fecha_Salida, Registro.Hora_Salida, Registro.ID_Celda
+                   Registro.Fecha_Entrada, Registro.Hora_Entrada, Registro.Fecha_Salida, Registro.Hora_Salida, Celda.Nombre
             FROM Registro
             JOIN Vehiculo ON Registro.Placa_Vehiculo = Vehiculo.Placa
+            LEFT JOIN Celda ON Registro.ID_Celda = Celda.ID_Celda
             ORDER BY Registro.Hora_Entrada DESC
         """)
         rows = cursor.fetchall()
@@ -26,7 +27,7 @@ class Registro:
                 'hora_entrada': row[5],
                 'fecha_salida': row[6],
                 'hora_salida': row[7],
-                'id_celda': row[8]
+                'celda': row[8]
             }
             for row in rows
         ]
