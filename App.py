@@ -2,28 +2,36 @@ import re
 import streamlit as st
 from Database.Models.Vehiculo import Vehiculo
 from Database.Models.Registro import Registro
+from Database.Models.Usuario import Usuario
 from Database.setup import crear_tablas
 import datetime
-import sqlite3
 
 # Crear tablas si no existen
 crear_tablas()
 st.title("Gestión de Parqueadero Colombia")
 
+# --- Sección para crear usuarios ---
+st.subheader("Registrar nuevo usuario")
+with st.form("form_usuario"):
+    nombre_usuario = st.text_input("Nombre del usuario")
+    telefono_usuario = st.text_input("Teléfono")
+    tipo_suscripcion = st.selectbox("Tipo de suscripción", ["Mensual", "Diario", "Otro"])
+    submit_usuario = st.form_submit_button("Registrar Usuario")
+    if submit_usuario:
+        if nombre_usuario and telefono_usuario and tipo_suscripcion:
+            u = Usuario(nombre_usuario, telefono_usuario, tipo_suscripcion)
+            u.registrar_usuario()
+            st.success(f"Usuario '{nombre_usuario}' registrado exitosamente.")
+        else:
+            st.warning("Por favor, complete todos los campos del usuario.")
+
+# Cargar usuarios para el selectbox
+usuarios_registrados = Usuario.obtener_todos()
+
 # Cargar registros desde la base de datos
 def cargar_registros():
     registros = Registro.obtener_todos()
     return registros
-
-
-# Función para obtener todos los usuarios únicos
-def obtener_usuarios():
-    conn = sqlite3.connect("parqueadero.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT Usuario FROM Vehiculo")
-    usuarios = [row[0] for row in cursor.fetchall()]
-    conn.close()
-    return usuarios
 
 
 # Validar formato de placa
@@ -45,12 +53,10 @@ def validar_placa(placa, tipo):
     return bool(re.match(patron, placa))
 
 # Formulario para registrar entrada
-usuarios_lista = obtener_usuarios()
-
 with st.form("form_entrada"):
     placa = st.text_input("Placa", key="placa_input")
     tipo = st.selectbox("Tipo de Vehículo", ["Carro", "Moto"])
-    usuario = st.selectbox("Usuario", usuarios_lista) if usuarios_lista else st.text_input("Usuario")
+    usuario = st.selectbox("Usuario", usuarios_registrados) if usuarios_registrados else st.text_input("Usuario")
     submit = st.form_submit_button("Registrar Entrada")
 
     # Validar en tiempo real el formato de la placa
@@ -81,45 +87,43 @@ tabla_vacia = st.empty()  # Usamos un contenedor vacío para actualizar la tabla
 # Función para mostrar los registros
 def mostrar_tabla(registros):
     # Cabeceras de tabla
-    cab1, cab2, cab3, cab4, cab5, cab6, cab7 = st.columns([2, 2, 2, 2, 2, 2, 1])
+    cab1, cab2, cab3, cab4, cab5, cab6 = st.columns([2, 2, 2, 2, 2, 1])
     cab1.markdown("**Placa**")
     cab2.markdown("**Tipo**")
-    cab3.markdown("**Usuario**")
-    cab4.markdown("**Fecha y Hora Entrada**")
-    cab5.markdown("**Fecha y Hora Salida**")
-    cab6.markdown("**Registrar Salida**")
-    cab7.markdown("**Eliminar**")
+    cab3.markdown("**Fecha y Hora Entrada**")
+    cab4.markdown("**Fecha y Hora Salida**")
+    cab5.markdown("**Registrar Salida**")
+    cab6.markdown("**Eliminar**")
 
     # Filas de registros
     for reg in registros:
-        col1, col2, col3, col4, col5, col6, col7 = st.columns([2, 2, 2, 2, 2, 2, 1])
+        col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 2, 2, 2, 1])
 
         col1.write(reg.get('placa', 'N/A'))
         col2.write(reg.get('tipo', 'N/A'))
-        col3.write(reg.get('usuario', 'N/A'))
 
         # Mostrar fecha y hora de entrada
         if reg.get('fecha_entrada') and reg.get('hora_entrada'):
-            col4.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
+            col3.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
         else:
-            col4.write("N/A")
+            col3.write("N/A")
 
         # Mostrar fecha y hora de salida
         if reg.get('fecha_salida') and reg.get('hora_salida'):
-            col5.write(f"{reg['fecha_salida']} {reg['hora_salida']}")
+            col4.write(f"{reg['fecha_salida']} {reg['hora_salida']}")
         else:
-            col5.write("🟥 En parqueadero")
+            col4.write("🟥 En parqueadero")
 
         # Botón para registrar salida
         if not reg['hora_salida']:
-            if col6.button("Registrar salida", key=f"salida_{reg['id']}"):
+            if col5.button("Registrar salida", key=f"salida_{reg['id']}"):
                 Registro.registrar_salida(reg['id'])
                 st.success(f"Salida registrada para {reg['placa']}")
         else:
-            col6.write("✅")
+            col5.write("✅")
 
         # Botón para eliminar
-        if col7.button("🗑️", key=f"eliminar_{reg['id']}"):
+        if col6.button("🗑️", key=f"eliminar_{reg['id']}"):
             Registro.eliminar_registro(reg['id'])
             st.warning(f"Registro de {reg['placa']} eliminado.")
 
