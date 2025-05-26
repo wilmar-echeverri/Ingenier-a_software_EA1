@@ -3,6 +3,7 @@ import streamlit as st
 from Database.Models.Vehiculo import Vehiculo
 from Database.Models.Registro import Registro
 from Database.Models.Usuario import Usuario
+from Database.Models.Celda import Celda
 from Database.setup import crear_tablas
 import datetime
 
@@ -84,9 +85,20 @@ with st.form("form_entrada"):
             if not validar_placa(placa, tipo):
                 st.error("La placa no es válida para el tipo de vehículo seleccionado.")
             else:
-                v = Vehiculo(placa, tipo, usuario)
-                v.registrar_entrada()
-                st.success("Entrada registrada exitosamente.")
+                id_celda = Celda.obtener_disponible(tipo)
+                if id_celda:
+                    v = Vehiculo(placa, tipo, usuario)
+                    v.registrar_vehiculo()
+                    from Database.Models.Registro import Registro
+                    import datetime
+                    ahora = datetime.datetime.now()
+                    fecha = ahora.date().isoformat()
+                    hora = ahora.time().strftime('%H:%M:%S')
+                    Registro.registrar_entrada_celda(placa, fecha, hora, id_celda)
+                    Celda.ocupar_celda(id_celda)
+                    st.success(f"Entrada registrada exitosamente. Celda asignada: {id_celda}")
+                else:
+                    st.error("No hay celdas disponibles para este tipo de vehículo.")
         else:
             st.warning("Por favor, complete todos los campos.")
 
