@@ -126,6 +126,10 @@ tabla_vacia = st.empty()  # Usamos un contenedor vacío para actualizar la tabla
 
 # Función para mostrar los registros
 def mostrar_tabla(registros):
+    # Evitar duplicados: solo mostrar la tabla una vez
+    if not registros:
+        st.info("No hay registros de vehículos.")
+        return
     # Cabeceras de tabla
     cab1, cab2, cab3, cab4, cab5, cab6, cab7, cab8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
     cab1.markdown("**Placa**")
@@ -138,10 +142,12 @@ def mostrar_tabla(registros):
     cab8.markdown("**Eliminar**")
 
     # Filas de registros
+    ids_vistos = set()
     for idx, reg in enumerate(registros):
-        # Usar solo el id del registro para el key, que es único en la base de datos
+        if reg['id'] in ids_vistos:
+            continue  # Evita mostrar el mismo registro dos veces
+        ids_vistos.add(reg['id'])
         col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
-
         col1.write(reg.get('placa', 'N/A'))
         col2.write(reg.get('tipo', 'N/A'))
         col3.write(reg.get('usuario', 'N/A'))
@@ -161,16 +167,20 @@ def mostrar_tabla(registros):
 
         # Botón para registrar salida
         if not reg['hora_salida']:
-            if col7.button("Registrar salida", key=f"salida_{reg['id']}"):
+            if col7.button("Registrar salida", key=f"salida_{reg['id']}_btn"):
                 Registro.registrar_salida(reg['id'])
                 st.success(f"Salida registrada para {reg['placa']}")
+                st.session_state.updated = True
+                st.experimental_rerun()
         else:
             col7.write("✅")
 
         # Botón para eliminar
-        if col8.button("🗑️", key=f"eliminar_{reg['id']}"):
+        if col8.button("🗑️", key=f"eliminar_{reg['id']}_btn"):
             Registro.eliminar_registro(reg['id'])
             st.warning(f"Registro de {reg['placa']} eliminado.")
+            st.session_state.updated = True
+            st.experimental_rerun()
 
 # Mostrar la tabla inicialmente
 registros = cargar_registros()  # Cargamos los registros al inicio
