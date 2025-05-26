@@ -1,9 +1,17 @@
-
 def crear_tablas():
     import sqlite3
     
     conn = sqlite3.connect("parqueadero.db")
     cursor = conn.cursor()
+    
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS Usuario (
+        ID_Usuario INTEGER PRIMARY KEY AUTOINCREMENT,
+        Nombre TEXT NOT NULL UNIQUE,
+        Telefono TEXT NOT NULL,
+        Tipo_Suscripcion TEXT NOT NULL
+    )
+    """)
     
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Vehiculo (
