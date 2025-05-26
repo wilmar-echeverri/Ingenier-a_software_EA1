@@ -8,7 +8,30 @@ from Database.setup import crear_tablas
 import datetime
 
 # Crear tablas si no existen
-crear_tablas()
+def setup_app():
+    crear_tablas()
+    inicializar_celdas()
+setup_app()
+
+def inicializar_celdas():
+    from Database.Models.Celda import Celda
+    import sqlite3
+    conn = sqlite3.connect("parqueadero.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM Celda")
+    cantidad = cursor.fetchone()[0]
+    if cantidad == 0:
+        # Insertar celdas de carros A1-A40
+        for i in range(1, 41):
+            nombre = f"A{i}"
+            cursor.execute("INSERT INTO Celda (ID_Celda, Tipo, Estado) VALUES (?, ?, ?)", (nombre, "carro", "disponible"))
+        # Insertar celdas de motos M1-M60
+        for i in range(1, 61):
+            nombre = f"M{i}"
+            cursor.execute("INSERT INTO Celda (ID_Celda, Tipo, Estado) VALUES (?, ?, ?)", (nombre, "moto", "disponible"))
+        conn.commit()
+    conn.close()
+
 st.title("Gestión de Parqueadero Colombia")
 
 # --- Sección para crear y eliminar usuarios ---
