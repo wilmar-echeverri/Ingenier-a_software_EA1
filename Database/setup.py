@@ -22,6 +22,14 @@ def crear_tablas():
     """)
     
     cursor.execute("""
+    CREATE TABLE IF NOT EXISTS Celda (
+        ID_Celda INTEGER PRIMARY KEY AUTOINCREMENT,
+        Tipo TEXT NOT NULL,
+        Estado TEXT NOT NULL DEFAULT 'disponible'
+    )
+    """)
+    
+    cursor.execute("""
     CREATE TABLE IF NOT EXISTS Registro (
         ID_Registro INTEGER PRIMARY KEY AUTOINCREMENT,
         Placa_Vehiculo TEXT NOT NULL UNIQUE,
@@ -29,7 +37,9 @@ def crear_tablas():
         Hora_Entrada TIME NOT NULL,
         Fecha_Salida DATE,
         Hora_Salida TIME,
-        FOREIGN KEY (Placa_Vehiculo) REFERENCES Vehiculo(Placa)
+        ID_Celda INTEGER,
+        FOREIGN KEY (Placa_Vehiculo) REFERENCES Vehiculo(Placa),
+        FOREIGN KEY (ID_Celda) REFERENCES Celda(ID_Celda)
     )
     """)
     
