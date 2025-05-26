@@ -19,10 +19,11 @@ class Celda:
     def obtener_disponibles(tipo):
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT Nombre FROM Celda WHERE Tipo = ? AND Estado = 'disponible'", (tipo,))
+        cursor.execute("SELECT ID_Celda, Nombre FROM Celda WHERE Tipo = ? AND Estado = 'disponible'", (tipo,))
         rows = cursor.fetchall()
         conn.close()
-        return [row[0] for row in rows] if rows else []
+        # Retorna lista de tuplas (ID_Celda, Nombre)
+        return rows if rows else []
 
     @staticmethod
     def ocupar_celda(nombre):
