@@ -9,7 +9,6 @@ import datetime
 
 # Inicializar celdas en la base de datos
 def inicializar_celdas():
-    from Database.Models.Celda import Celda
     import sqlite3
     conn = sqlite3.connect("parqueadero.db")
     cursor = conn.cursor()
@@ -19,11 +18,11 @@ def inicializar_celdas():
         # Insertar celdas de carros A1-A40
         for i in range(1, 41):
             nombre = f"A{i}"
-            cursor.execute("INSERT INTO Celda (ID_Celda, Tipo, Estado) VALUES (?, ?, ?)", (nombre, "carro", "disponible"))
+            cursor.execute("INSERT INTO Celda (Nombre, Tipo, Estado) VALUES (?, ?, ?)", (nombre, "carro", "disponible"))
         # Insertar celdas de motos M1-M60
         for i in range(1, 61):
             nombre = f"M{i}"
-            cursor.execute("INSERT INTO Celda (ID_Celda, Tipo, Estado) VALUES (?, ?, ?)", (nombre, "moto", "disponible"))
+            cursor.execute("INSERT INTO Celda (Nombre, Tipo, Estado) VALUES (?, ?, ?)", (nombre, "moto", "disponible"))
         conn.commit()
     conn.close()
 
