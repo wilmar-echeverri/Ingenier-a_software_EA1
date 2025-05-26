@@ -3,6 +3,7 @@ import streamlit as st
 from Database.Models.Vehiculo import Vehiculo
 from Database.Models.Registro import Registro
 from Database.Models.Usuario import Usuario
+from Database.Models.Celda import Celda
 from Database.setup import crear_tablas
 import datetime
 
@@ -68,6 +69,12 @@ with st.form("form_entrada"):
     placa = st.text_input("Placa", key="placa_input")
     tipo = st.selectbox("Tipo de Vehículo", ["Carro", "Moto"])
     usuario = st.selectbox("Usuario", usuarios_registrados) if usuarios_registrados else st.text_input("Usuario")
+    # Obtener celdas disponibles según el tipo
+    tipo_celda = "carro" if tipo == "Carro" else "moto"
+    # Consultar celdas disponibles
+    conn = Celda.obtener_disponibles(tipo_celda)
+    celdas_disponibles = conn if conn else []
+    celda_seleccionada = st.selectbox("Celda disponible", celdas_disponibles, key="celda_input")
     submit = st.form_submit_button("Registrar Entrada")
 
     # Validar en tiempo real el formato de la placa
@@ -78,16 +85,22 @@ with st.form("form_entrada"):
             st.success("La placa es válida.")
 
     if submit:
-        if placa and usuario:
+        if placa and usuario and celda_seleccionada:
             # Validar el formato de la placa al momento de registrar la entrada
             if not validar_placa(placa, tipo):
                 st.error("La placa no es válida para el tipo de vehículo seleccionado.")
             else:
                 v = Vehiculo(placa, tipo, usuario)
-                v.registrar_entrada()
-                st.success("Entrada registrada exitosamente.")
+                v.registrar_vehiculo()
+                # Registrar entrada con celda
+                ahora = datetime.datetime.now()
+                fecha = ahora.date().isoformat()
+                hora = ahora.time().strftime('%H:%M:%S')
+                Registro.registrar_entrada_celda(placa, fecha, hora, celda_seleccionada)
+                Celda.ocupar_celda(celda_seleccionada)
+                st.success(f"Entrada registrada exitosamente en celda {celda_seleccionada}.")
         else:
-            st.warning("Por favor, complete todos los campos.")
+            st.warning("Por favor, complete todos los campos y seleccione una celda.")
 
 # Mostrar registros actuales
 st.subheader("Registros de Vehículos")
@@ -98,45 +111,47 @@ tabla_vacia = st.empty()  # Usamos un contenedor vacío para actualizar la tabla
 # Función para mostrar los registros
 def mostrar_tabla(registros):
     # Cabeceras de tabla
-    cab1, cab2, cab3, cab4, cab5, cab6, cab7 = st.columns([2, 2, 2, 2, 2, 2, 1])
+    cab1, cab2, cab3, cab4, cab5, cab6, cab7, cab8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
     cab1.markdown("**Placa**")
     cab2.markdown("**Tipo**")
     cab3.markdown("**Usuario**")
-    cab4.markdown("**Fecha y Hora Entrada**")
-    cab5.markdown("**Fecha y Hora Salida**")
-    cab6.markdown("**Registrar Salida**")
-    cab7.markdown("**Eliminar**")
+    cab4.markdown("**Celda**")
+    cab5.markdown("**Fecha y Hora Entrada**")
+    cab6.markdown("**Fecha y Hora Salida**")
+    cab7.markdown("**Registrar Salida**")
+    cab8.markdown("**Eliminar**")
 
     # Filas de registros
     for reg in registros:
-        col1, col2, col3, col4, col5, col6, col7 = st.columns([2, 2, 2, 2, 2, 2, 1])
+        col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
 
         col1.write(reg.get('placa', 'N/A'))
         col2.write(reg.get('tipo', 'N/A'))
         col3.write(reg.get('usuario', 'N/A'))
+        col4.write(reg.get('id_celda', 'N/A'))
 
         # Mostrar fecha y hora de entrada
         if reg.get('fecha_entrada') and reg.get('hora_entrada'):
-            col4.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
+            col5.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
         else:
-            col4.write("N/A")
+            col5.write("N/A")
 
         # Mostrar fecha y hora de salida
         if reg.get('fecha_salida') and reg.get('hora_salida'):
-            col5.write(f"{reg['fecha_salida']} {reg['hora_salida']}")
+            col6.write(f"{reg['fecha_salida']} {reg['hora_salida']}")
         else:
-            col5.write("🟥 En parqueadero")
+            col6.write("🟥 En parqueadero")
 
         # Botón para registrar salida
         if not reg['hora_salida']:
-            if col6.button("Registrar salida", key=f"salida_{reg['id']}"):
+            if col7.button("Registrar salida", key=f"salida_{reg['id']}"):
                 Registro.registrar_salida(reg['id'])
                 st.success(f"Salida registrada para {reg['placa']}")
         else:
-            col6.write("✅")
+            col7.write("✅")
 
         # Botón para eliminar
-        if col7.button("🗑️", key=f"eliminar_{reg['id']}"):
+        if col8.button("🗑️", key=f"eliminar_{reg['id']}"):
             Registro.eliminar_registro(reg['id'])
             st.warning(f"Registro de {reg['placa']} eliminado.")
 
