@@ -16,6 +16,15 @@ class Celda:
         return row[0] if row else None
 
     @staticmethod
+    def obtener_disponibles(tipo):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT ID_Celda FROM Celda WHERE Tipo = ? AND Estado = 'disponible'", (tipo,))
+        rows = cursor.fetchall()
+        conn.close()
+        return [row[0] for row in rows] if rows else []
+
+    @staticmethod
     def ocupar_celda(id_celda):
         conn = get_connection()
         cursor = conn.cursor()
