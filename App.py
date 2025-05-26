@@ -3,30 +3,11 @@ import streamlit as st
 from Database.Models.Vehiculo import Vehiculo
 from Database.Models.Registro import Registro
 from Database.Models.Usuario import Usuario
-from Database.Models.Celda import Celda
 from Database.setup import crear_tablas
 import datetime
 
 # Crear tablas si no existen
 crear_tablas()
-
-def poblar_celdas_iniciales():
-    import sqlite3
-    conn = sqlite3.connect("parqueadero.db")
-    cursor = conn.cursor()
-    # Verifica si ya hay celdas
-    cursor.execute("SELECT COUNT(*) FROM Celda")
-    count = cursor.fetchone()[0]
-    if count == 0:
-        # Agrega 5 celdas para carros y 5 para motos
-        for _ in range(5):
-            cursor.execute("INSERT INTO Celda (Tipo, Estado) VALUES (?, 'disponible')", ("Carro",))
-            cursor.execute("INSERT INTO Celda (Tipo, Estado) VALUES (?, 'disponible')", ("Moto",))
-        conn.commit()
-    conn.close()
-
-poblar_celdas_iniciales()
-
 st.title("Gestión de Parqueadero Colombia")
 
 # --- Sección para crear y eliminar usuarios ---
@@ -51,8 +32,7 @@ if usuarios_registrados:
     for usuario in usuarios_registrados:
         col1, col2 = st.columns([4,1])
         col1.write(usuario)
-        eliminar = col2.button("Eliminar", key=f"eliminar_usuario_{usuario}")
-        if eliminar:
+        if col2.button("Eliminar", key=f"eliminar_usuario_{usuario}"):
             Usuario.eliminar_usuario(usuario)
             st.warning(f"Usuario '{usuario}' eliminado.")
             st.experimental_rerun()
@@ -99,22 +79,13 @@ with st.form("form_entrada"):
 
     if submit:
         if placa and usuario:
+            # Validar el formato de la placa al momento de registrar la entrada
             if not validar_placa(placa, tipo):
                 st.error("La placa no es válida para el tipo de vehículo seleccionado.")
             else:
-                id_celda = Celda.obtener_disponible(tipo)
-                if id_celda:
-                    v = Vehiculo(placa, tipo, usuario)
-                    v.registrar_vehiculo()
-                    ahora = datetime.datetime.now()
-                    fecha = ahora.date().isoformat()
-                    hora = ahora.time().strftime('%H:%M:%S')
-                    Registro.registrar_entrada_celda(placa, fecha, hora, id_celda)
-                    Celda.ocupar_celda(id_celda)
-                    st.success(f"Entrada registrada exitosamente. Celda asignada: {id_celda}")
-                    st.session_state.updated = True
-                else:
-                    st.error("No hay celdas disponibles para este tipo de vehículo.")
+                v = Vehiculo(placa, tipo, usuario)
+                v.registrar_entrada()
+                st.success("Entrada registrada exitosamente.")
         else:
             st.warning("Por favor, complete todos los campos.")
 
@@ -126,61 +97,48 @@ tabla_vacia = st.empty()  # Usamos un contenedor vacío para actualizar la tabla
 
 # Función para mostrar los registros
 def mostrar_tabla(registros):
-    # Evitar duplicados: solo mostrar la tabla una vez
-    if not registros:
-        st.info("No hay registros de vehículos.")
-        return
     # Cabeceras de tabla
-    cab1, cab2, cab3, cab4, cab5, cab6, cab7, cab8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
+    cab1, cab2, cab3, cab4, cab5, cab6, cab7 = st.columns([2, 2, 2, 2, 2, 2, 1])
     cab1.markdown("**Placa**")
     cab2.markdown("**Tipo**")
     cab3.markdown("**Usuario**")
-    cab4.markdown("**Celda**")
-    cab5.markdown("**Fecha y Hora Entrada**")
-    cab6.markdown("**Fecha y Hora Salida**")
-    cab7.markdown("**Registrar Salida**")
-    cab8.markdown("**Eliminar**")
+    cab4.markdown("**Fecha y Hora Entrada**")
+    cab5.markdown("**Fecha y Hora Salida**")
+    cab6.markdown("**Registrar Salida**")
+    cab7.markdown("**Eliminar**")
 
     # Filas de registros
-    ids_vistos = set()
-    for idx, reg in enumerate(registros):
-        if reg['id'] in ids_vistos:
-            continue  # Evita mostrar el mismo registro dos veces
-        ids_vistos.add(reg['id'])
-        col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
+    for reg in registros:
+        col1, col2, col3, col4, col5, col6, col7 = st.columns([2, 2, 2, 2, 2, 2, 1])
+
         col1.write(reg.get('placa', 'N/A'))
         col2.write(reg.get('tipo', 'N/A'))
         col3.write(reg.get('usuario', 'N/A'))
-        col4.write(reg.get('id_celda', 'N/A'))
 
         # Mostrar fecha y hora de entrada
         if reg.get('fecha_entrada') and reg.get('hora_entrada'):
-            col5.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
+            col4.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
         else:
-            col5.write("N/A")
+            col4.write("N/A")
 
         # Mostrar fecha y hora de salida
         if reg.get('fecha_salida') and reg.get('hora_salida'):
-            col6.write(f"{reg['fecha_salida']} {reg['hora_salida']}")
+            col5.write(f"{reg['fecha_salida']} {reg['hora_salida']}")
         else:
-            col6.write("🟥 En parqueadero")
+            col5.write("🟥 En parqueadero")
 
         # Botón para registrar salida
         if not reg['hora_salida']:
-            if col7.button("Registrar salida", key=f"salida_{reg['id']}_btn"):
+            if col6.button("Registrar salida", key=f"salida_{reg['id']}"):
                 Registro.registrar_salida(reg['id'])
                 st.success(f"Salida registrada para {reg['placa']}")
-                st.session_state.updated = True
-                st.experimental_rerun()
         else:
-            col7.write("✅")
+            col6.write("✅")
 
         # Botón para eliminar
-        if col8.button("🗑️", key=f"eliminar_{reg['id']}_btn"):
+        if col7.button("🗑️", key=f"eliminar_{reg['id']}"):
             Registro.eliminar_registro(reg['id'])
             st.warning(f"Registro de {reg['placa']} eliminado.")
-            st.session_state.updated = True
-            st.experimental_rerun()
 
 # Mostrar la tabla inicialmente
 registros = cargar_registros()  # Cargamos los registros al inicio
