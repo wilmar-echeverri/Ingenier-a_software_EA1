@@ -52,9 +52,9 @@ class Registro:
         cursor = conn.cursor()
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # Obtener la celda asignada
-        cursor.execute("SELECT ID_Celda FROM Registro WHERE ID_Registro = ?", (id_registro,))
+        cursor.execute("SELECT Celda.Nombre FROM Registro JOIN Celda ON Registro.ID_Celda = Celda.ID_Celda WHERE Registro.ID_Registro = ?", (id_registro,))
         row = cursor.fetchone()
-        id_celda = row[0] if row else None
+        nombre_celda = row[0] if row else None
         # Actualizar la hora de salida en la tabla Registro
         cursor.execute("""
             UPDATE Registro 
@@ -64,9 +64,9 @@ class Registro:
         conn.commit()
         conn.close()
         # Liberar la celda si corresponde
-        if id_celda:
+        if nombre_celda:
             from Database.Models.Celda import Celda
-            Celda.liberar_celda(id_celda)
+            Celda.liberar_celda(nombre_celda)
 
     @staticmethod
     def eliminar_registro(id_registro):
