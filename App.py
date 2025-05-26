@@ -90,11 +90,11 @@ def validar_placa(placa, tipo):
 # Formulario para registrar entrada
 with st.form("form_entrada"):
     placa = st.text_input("Placa", key="placa_input")
-    tipo = st.selectbox("Tipo de Vehículo", ["Carro", "Moto"])
+    tipo = st.selectbox("Tipo de Vehículo", ["Carro", "Moto"], key="tipo_vehiculo")
     usuario = st.selectbox("Usuario", usuarios_registrados) if usuarios_registrados else st.text_input("Usuario")
     tipo_celda = "carro" if tipo == "Carro" else "moto"
     disponibles = Celda.obtener_disponibles(tipo_celda)
-    opciones = {nombre: id_celda for id_celda, nombre in disponibles}
+    opciones = {nombre: nombre for _, nombre in disponibles}
     celda_nombre = st.selectbox("Celda disponible", list(opciones.keys()), key="celda_input") if opciones else None
     submit = st.form_submit_button("Registrar Entrada")
 
@@ -111,15 +111,25 @@ with st.form("form_entrada"):
             if not validar_placa(placa, tipo):
                 st.error("La placa no es válida para el tipo de vehículo seleccionado.")
             else:
-                v = Vehiculo(placa, tipo, usuario)
-                v.registrar_vehiculo()
-                ahora = datetime.datetime.now()
-                fecha = ahora.date().isoformat()
-                hora = ahora.time().strftime('%H:%M:%S')
-                id_celda = opciones[celda_nombre]
-                Registro.registrar_entrada_celda(placa, fecha, hora, id_celda)
-                Celda.ocupar_celda(id_celda)
-                st.success(f"Entrada registrada exitosamente en celda {celda_nombre}.")
+                # Validar que la celda no esté ocupada por otro vehículo
+                disponibles_actual = [nombre for _, nombre in Celda.obtener_disponibles(tipo_celda)]
+                if celda_nombre not in disponibles_actual:
+                    st.error("La celda seleccionada ya está ocupada. Actualiza la página.")
+                else:
+                    # Validar que la placa no esté ya en el parqueadero
+                    registros = cargar_registros()
+                    placas_en_parqueo = [r['placa'] for r in registros if not r['hora_salida']]
+                    if placa in placas_en_parqueo:
+                        st.error("Este vehículo ya está registrado en el parqueadero.")
+                    else:
+                        v = Vehiculo(placa, tipo, usuario)
+                        v.registrar_vehiculo()
+                        ahora = datetime.datetime.now()
+                        fecha = ahora.date().isoformat()
+                        hora = ahora.time().strftime('%H:%M:%S')
+                        Registro.registrar_entrada_celda(placa, fecha, hora, celda_nombre)
+                        Celda.ocupar_celda(celda_nombre)
+                        st.success(f"Entrada registrada exitosamente en celda {celda_nombre}.")
         else:
             st.warning("Por favor, complete todos los campos y seleccione una celda.")
 
@@ -131,7 +141,6 @@ tabla_vacia = st.empty()  # Usamos un contenedor vacío para actualizar la tabla
 
 # Función para mostrar los registros
 def mostrar_tabla(registros):
-    # Cabeceras de tabla
     cab1, cab2, cab3, cab4, cab5, cab6, cab7, cab8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
     cab1.markdown("**Placa**")
     cab2.markdown("**Tipo**")
@@ -142,47 +151,37 @@ def mostrar_tabla(registros):
     cab7.markdown("**Registrar Salida**")
     cab8.markdown("**Eliminar**")
 
-    # Obtener mapeo de id_celda a nombre
+    # Obtener mapeo de nombre de celda
     import sqlite3
     conn = sqlite3.connect("parqueadero.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT ID_Celda, Nombre FROM Celda")
-    celdas_map = {row[0]: row[1] for row in cursor.fetchall()}
+    cursor.execute("SELECT Nombre FROM Celda")
+    nombres_celdas = set(row[0] for row in cursor.fetchall())
     conn.close()
 
-    # Filas de registros
     for reg in registros:
         col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
-
         col1.write(reg.get('placa', 'N/A'))
         col2.write(reg.get('tipo', 'N/A'))
         col3.write(reg.get('usuario', 'N/A'))
         # Mostrar nombre de celda si existe
-        celda_id = reg.get('id_celda', None)
-        nombre_celda = celdas_map.get(celda_id, 'N/A') if celda_id else 'N/A'
+        celda = reg.get('id_celda', None)
+        nombre_celda = celda if celda in nombres_celdas else 'N/A'
         col4.write(nombre_celda)
-
-        # Mostrar fecha y hora de entrada
         if reg.get('fecha_entrada') and reg.get('hora_entrada'):
             col5.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
         else:
             col5.write("N/A")
-
-        # Mostrar fecha y hora de salida
         if reg.get('fecha_salida') and reg.get('hora_salida'):
             col6.write(f"{reg['fecha_salida']} {reg['hora_salida']}")
         else:
             col6.write("🟥 En parqueadero")
-
-        # Botón para registrar salida
         if not reg['hora_salida']:
             if col7.button("Registrar salida", key=f"salida_{reg['id']}"):
                 Registro.registrar_salida(reg['id'])
                 st.success(f"Salida registrada para {reg['placa']}")
         else:
             col7.write("✅")
-
-        # Botón para eliminar
         if col8.button("🗑️", key=f"eliminar_{reg['id']}"):
             Registro.eliminar_registro(reg['id'])
             st.warning(f"Registro de {reg['placa']} eliminado.")
