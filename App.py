@@ -113,7 +113,6 @@ with st.form("form_entrada"):
                     Celda.ocupar_celda(id_celda)
                     st.success(f"Entrada registrada exitosamente. Celda asignada: {id_celda}")
                     st.session_state.updated = True
-                    st.experimental_rerun()  # Recarga la app para evitar mostrar la tabla dos veces
                 else:
                     st.error("No hay celdas disponibles para este tipo de vehículo.")
         else:
