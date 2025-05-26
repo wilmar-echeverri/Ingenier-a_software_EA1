@@ -24,6 +24,7 @@ def crear_tablas():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Celda (
         ID_Celda INTEGER PRIMARY KEY AUTOINCREMENT,
+        Nombre TEXT UNIQUE,
         Tipo TEXT NOT NULL,
         Estado TEXT NOT NULL DEFAULT 'disponible'
     )
