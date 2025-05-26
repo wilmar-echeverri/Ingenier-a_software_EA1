@@ -9,6 +9,24 @@ import datetime
 
 # Crear tablas si no existen
 crear_tablas()
+
+def poblar_celdas_iniciales():
+    import sqlite3
+    conn = sqlite3.connect("parqueadero.db")
+    cursor = conn.cursor()
+    # Verifica si ya hay celdas
+    cursor.execute("SELECT COUNT(*) FROM Celda")
+    count = cursor.fetchone()[0]
+    if count == 0:
+        # Agrega 5 celdas para carros y 5 para motos
+        for _ in range(5):
+            cursor.execute("INSERT INTO Celda (Tipo, Estado) VALUES (?, 'disponible')", ("Carro",))
+            cursor.execute("INSERT INTO Celda (Tipo, Estado) VALUES (?, 'disponible')", ("Moto",))
+        conn.commit()
+    conn.close()
+
+poblar_celdas_iniciales()
+
 st.title("Gestión de Parqueadero Colombia")
 
 # --- Sección para crear y eliminar usuarios ---
