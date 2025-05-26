@@ -151,23 +151,12 @@ def mostrar_tabla(registros):
     cab7.markdown("**Registrar Salida**")
     cab8.markdown("**Eliminar**")
 
-    # Obtener mapeo de nombre de celda
-    import sqlite3
-    conn = sqlite3.connect("parqueadero.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT Nombre FROM Celda")
-    nombres_celdas = set(row[0] for row in cursor.fetchall())
-    conn.close()
-
     for reg in registros:
         col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
         col1.write(reg.get('placa', 'N/A'))
         col2.write(reg.get('tipo', 'N/A'))
         col3.write(reg.get('usuario', 'N/A'))
-        # Mostrar nombre de celda si existe
-        celda = reg.get('id_celda', None)
-        nombre_celda = celda if celda in nombres_celdas else 'N/A'
-        col4.write(nombre_celda)
+        col4.write(reg.get('celda', 'N/A'))
         if reg.get('fecha_entrada') and reg.get('hora_entrada'):
             col5.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
         else:
