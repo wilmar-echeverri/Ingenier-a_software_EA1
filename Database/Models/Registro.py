@@ -32,9 +32,13 @@ class Registro:
         ]
 
     @staticmethod
-    def registrar_entrada_celda(placa, fecha, hora, id_celda):
+    def registrar_entrada_celda(placa, fecha, hora, nombre_celda):
         conn = get_connection()
         cursor = conn.cursor()
+        # Buscar el ID_Celda por el nombre
+        cursor.execute("SELECT ID_Celda FROM Celda WHERE Nombre = ?", (nombre_celda,))
+        row = cursor.fetchone()
+        id_celda = row[0] if row else None
         cursor.execute("""
             INSERT INTO Registro (Placa_Vehiculo, Fecha_Entrada, Hora_Entrada, ID_Celda)
             VALUES (?, ?, ?, ?)
