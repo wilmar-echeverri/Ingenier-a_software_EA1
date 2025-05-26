@@ -10,7 +10,7 @@ import datetime
 crear_tablas()
 st.title("Gestión de Parqueadero Colombia")
 
-# --- Sección para crear usuarios ---
+# --- Sección para crear y eliminar usuarios ---
 st.subheader("Registrar nuevo usuario")
 with st.form("form_usuario"):
     nombre_usuario = st.text_input("Nombre del usuario")
@@ -25,8 +25,19 @@ with st.form("form_usuario"):
         else:
             st.warning("Por favor, complete todos los campos del usuario.")
 
-# Cargar usuarios para el selectbox
+# Mostrar y eliminar usuarios existentes
+st.subheader("Usuarios registrados")
 usuarios_registrados = Usuario.obtener_todos()
+if usuarios_registrados:
+    for usuario in usuarios_registrados:
+        col1, col2 = st.columns([4,1])
+        col1.write(usuario)
+        if col2.button("Eliminar", key=f"eliminar_usuario_{usuario}"):
+            Usuario.eliminar_usuario(usuario)
+            st.warning(f"Usuario '{usuario}' eliminado.")
+            st.experimental_rerun()
+else:
+    st.info("No hay usuarios registrados.")
 
 # Cargar registros desde la base de datos
 def cargar_registros():
