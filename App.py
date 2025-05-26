@@ -17,10 +17,12 @@ def inicializar_celdas():
     if cantidad == 0:
         # Insertar celdas de carros A1-A40
         for i in range(1, 41):
-            cursor.execute("INSERT INTO Celda (Tipo, Estado) VALUES (?, ?)", ("carro", "disponible"))
+            nombre = f"A{i}"
+            cursor.execute("INSERT INTO Celda (Nombre, Tipo, Estado) VALUES (?, ?, ?)", (nombre, "carro", "disponible"))
         # Insertar celdas de motos M1-M60
         for i in range(1, 61):
-            cursor.execute("INSERT INTO Celda (Tipo, Estado) VALUES (?, ?)", ("moto", "disponible"))
+            nombre = f"M{i}"
+            cursor.execute("INSERT INTO Celda (Nombre, Tipo, Estado) VALUES (?, ?, ?)", (nombre, "moto", "disponible"))
         conn.commit()
     conn.close()
 
@@ -90,12 +92,10 @@ with st.form("form_entrada"):
     placa = st.text_input("Placa", key="placa_input")
     tipo = st.selectbox("Tipo de Vehículo", ["Carro", "Moto"])
     usuario = st.selectbox("Usuario", usuarios_registrados) if usuarios_registrados else st.text_input("Usuario")
-    # Obtener celdas disponibles según el tipo
     tipo_celda = "carro" if tipo == "Carro" else "moto"
-    # Consultar celdas disponibles
-    conn = Celda.obtener_disponibles(tipo_celda)
-    celdas_disponibles = conn if conn else []
-    celda_seleccionada = st.selectbox("Celda disponible", celdas_disponibles, key="celda_input")
+    disponibles = Celda.obtener_disponibles(tipo_celda)
+    opciones = {nombre: id_celda for id_celda, nombre in disponibles}
+    celda_nombre = st.selectbox("Celda disponible", list(opciones.keys()), key="celda_input") if opciones else None
     submit = st.form_submit_button("Registrar Entrada")
 
     # Validar en tiempo real el formato de la placa
@@ -106,20 +106,20 @@ with st.form("form_entrada"):
             st.success("La placa es válida.")
 
     if submit:
-        if placa and usuario and celda_seleccionada:
+        if placa and usuario and celda_nombre:
             # Validar el formato de la placa al momento de registrar la entrada
             if not validar_placa(placa, tipo):
                 st.error("La placa no es válida para el tipo de vehículo seleccionado.")
             else:
                 v = Vehiculo(placa, tipo, usuario)
                 v.registrar_vehiculo()
-                # Registrar entrada con celda
                 ahora = datetime.datetime.now()
                 fecha = ahora.date().isoformat()
                 hora = ahora.time().strftime('%H:%M:%S')
-                Registro.registrar_entrada_celda(placa, fecha, hora, celda_seleccionada)
-                Celda.ocupar_celda(celda_seleccionada)
-                st.success(f"Entrada registrada exitosamente en celda {celda_seleccionada}.")
+                id_celda = opciones[celda_nombre]
+                Registro.registrar_entrada_celda(placa, fecha, hora, id_celda)
+                Celda.ocupar_celda(id_celda)
+                st.success(f"Entrada registrada exitosamente en celda {celda_nombre}.")
         else:
             st.warning("Por favor, complete todos los campos y seleccione una celda.")
 
@@ -142,6 +142,14 @@ def mostrar_tabla(registros):
     cab7.markdown("**Registrar Salida**")
     cab8.markdown("**Eliminar**")
 
+    # Obtener mapeo de id_celda a nombre
+    import sqlite3
+    conn = sqlite3.connect("parqueadero.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT ID_Celda, Nombre FROM Celda")
+    celdas_map = {row[0]: row[1] for row in cursor.fetchall()}
+    conn.close()
+
     # Filas de registros
     for reg in registros:
         col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
@@ -149,7 +157,10 @@ def mostrar_tabla(registros):
         col1.write(reg.get('placa', 'N/A'))
         col2.write(reg.get('tipo', 'N/A'))
         col3.write(reg.get('usuario', 'N/A'))
-        col4.write(reg.get('id_celda', 'N/A'))
+        # Mostrar nombre de celda si existe
+        celda_id = reg.get('id_celda', None)
+        nombre_celda = celdas_map.get(celda_id, 'N/A') if celda_id else 'N/A'
+        col4.write(nombre_celda)
 
         # Mostrar fecha y hora de entrada
         if reg.get('fecha_entrada') and reg.get('hora_entrada'):
