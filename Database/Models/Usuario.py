@@ -22,3 +22,11 @@ class Usuario:
         usuarios = [row[0] for row in cursor.fetchall()]
         conn.close()
         return usuarios
+
+    @staticmethod
+    def eliminar_usuario(nombre):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Usuario WHERE Nombre = ?", (nombre,))
+        conn.commit()
+        conn.close()
