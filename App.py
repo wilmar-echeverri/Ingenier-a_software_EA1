@@ -81,7 +81,6 @@ with st.form("form_entrada"):
 
     if submit:
         if placa and usuario:
-            # Validar el formato de la placa al momento de registrar la entrada
             if not validar_placa(placa, tipo):
                 st.error("La placa no es válida para el tipo de vehículo seleccionado.")
             else:
@@ -89,14 +88,13 @@ with st.form("form_entrada"):
                 if id_celda:
                     v = Vehiculo(placa, tipo, usuario)
                     v.registrar_vehiculo()
-                    from Database.Models.Registro import Registro
-                    import datetime
                     ahora = datetime.datetime.now()
                     fecha = ahora.date().isoformat()
                     hora = ahora.time().strftime('%H:%M:%S')
                     Registro.registrar_entrada_celda(placa, fecha, hora, id_celda)
                     Celda.ocupar_celda(id_celda)
                     st.success(f"Entrada registrada exitosamente. Celda asignada: {id_celda}")
+                    st.session_state.updated = True
                 else:
                     st.error("No hay celdas disponibles para este tipo de vehículo.")
         else:
@@ -111,45 +109,47 @@ tabla_vacia = st.empty()  # Usamos un contenedor vacío para actualizar la tabla
 # Función para mostrar los registros
 def mostrar_tabla(registros):
     # Cabeceras de tabla
-    cab1, cab2, cab3, cab4, cab5, cab6, cab7 = st.columns([2, 2, 2, 2, 2, 2, 1])
+    cab1, cab2, cab3, cab4, cab5, cab6, cab7, cab8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
     cab1.markdown("**Placa**")
     cab2.markdown("**Tipo**")
     cab3.markdown("**Usuario**")
-    cab4.markdown("**Fecha y Hora Entrada**")
-    cab5.markdown("**Fecha y Hora Salida**")
-    cab6.markdown("**Registrar Salida**")
-    cab7.markdown("**Eliminar**")
+    cab4.markdown("**Celda**")
+    cab5.markdown("**Fecha y Hora Entrada**")
+    cab6.markdown("**Fecha y Hora Salida**")
+    cab7.markdown("**Registrar Salida**")
+    cab8.markdown("**Eliminar**")
 
     # Filas de registros
     for reg in registros:
-        col1, col2, col3, col4, col5, col6, col7 = st.columns([2, 2, 2, 2, 2, 2, 1])
+        col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([2, 2, 2, 2, 2, 2, 1, 2])
 
         col1.write(reg.get('placa', 'N/A'))
         col2.write(reg.get('tipo', 'N/A'))
         col3.write(reg.get('usuario', 'N/A'))
+        col4.write(reg.get('id_celda', 'N/A'))
 
         # Mostrar fecha y hora de entrada
         if reg.get('fecha_entrada') and reg.get('hora_entrada'):
-            col4.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
+            col5.write(f"{reg['fecha_entrada']} {reg['hora_entrada']}")
         else:
-            col4.write("N/A")
+            col5.write("N/A")
 
         # Mostrar fecha y hora de salida
         if reg.get('fecha_salida') and reg.get('hora_salida'):
-            col5.write(f"{reg['fecha_salida']} {reg['hora_salida']}")
+            col6.write(f"{reg['fecha_salida']} {reg['hora_salida']}")
         else:
-            col5.write("🟥 En parqueadero")
+            col6.write("🟥 En parqueadero")
 
         # Botón para registrar salida
         if not reg['hora_salida']:
-            if col6.button("Registrar salida", key=f"salida_{reg['id']}"):
+            if col7.button("Registrar salida", key=f"salida_{reg['id']}"):
                 Registro.registrar_salida(reg['id'])
                 st.success(f"Salida registrada para {reg['placa']}")
         else:
-            col6.write("✅")
+            col7.write("✅")
 
         # Botón para eliminar
-        if col7.button("🗑️", key=f"eliminar_{reg['id']}"):
+        if col8.button("🗑️", key=f"eliminar_{reg['id']}"):
             Registro.eliminar_registro(reg['id'])
             st.warning(f"Registro de {reg['placa']} eliminado.")
 
