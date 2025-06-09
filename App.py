@@ -4,6 +4,7 @@ from Database.Models.Vehiculo import Vehiculo
 from Database.Models.Registro import Registro
 from Database.Models.Usuario import Usuario
 from Database.Models.Celda import Celda
+from Database.Models.Pago import Pago
 from Database.setup import crear_tablas
 import datetime
 
@@ -184,3 +185,42 @@ if st.session_state.get('updated', False):
     registros = cargar_registros()
     mostrar_tabla(registros)
     st.session_state.updated = False
+
+# --- Sección de gestión de pagos ---
+st.subheader("Gestión de Pagos")
+
+# Registrar un nuevo pago
+st.markdown("### Registrar pago")
+usuarios_registrados = Usuario.obtener_todos()
+usuario_pago = st.selectbox("Usuario", usuarios_registrados, key="usuario_pago") if usuarios_registrados else None
+monto_pago = st.number_input("Monto del pago", min_value=0.0, step=0.01, format="%.2f")
+metodo_pago = st.selectbox("Método de pago", ["Efectivo", "Tarjeta", "Transferencia"], key="metodo_pago")
+registrar_pago_btn = st.button("Registrar Pago")
+
+if registrar_pago_btn:
+    if usuario_pago and monto_pago > 0 and metodo_pago:
+        id_usuario = Usuario.obtener_id_por_nombre(usuario_pago)
+        try:
+            id_pago = Pago.registrar_pago(id_usuario, monto_pago, metodo_pago)
+            comprobante = Pago.generar_comprobante(id_pago)
+            st.success(f"Pago registrado exitosamente para {usuario_pago}.")
+            st.json(comprobante)
+        except Exception as e:
+            st.error(f"Error al registrar el pago: {str(e)}")
+    else:
+        st.warning("Por favor, complete todos los campos para registrar el pago.")
+
+# Consultar historial de pagos
+st.markdown("### Historial de pagos por usuario")
+usuario_historial = st.selectbox("Usuario para historial", usuarios_registrados, key="usuario_historial") if usuarios_registrados else None
+consultar_historial_btn = st.button("Consultar Historial")
+
+if consultar_historial_btn and usuario_historial:
+    id_usuario = Usuario.obtener_id_por_nombre(usuario_historial)
+    pagos = Pago.historial_pagos(id_usuario)
+    if pagos:
+        st.write(f"Historial de pagos para {usuario_historial}:")
+        for pago in pagos:
+            st.write(f"ID: {pago[0]}, Fecha: {pago[1]}, Monto: ${pago[2]:.2f}, Método: {pago[3]}")
+    else:
+        st.info("No hay pagos registrados para este usuario.")
