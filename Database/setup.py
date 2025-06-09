@@ -4,15 +4,17 @@ def crear_tablas():
     conn = sqlite3.connect("parqueadero.db")
     cursor = conn.cursor()
     
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS Usuario (
-        ID_Usuario INTEGER PRIMARY KEY AUTOINCREMENT,
-        Nombre TEXT NOT NULL UNIQUE,
-        Telefono TEXT NOT NULL,
-        Tipo_Suscripcion TEXT NOT NULL
-    )
-    """)
+    # Tabla Usuario
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Usuario (
+            idUsuario INTEGER PRIMARY KEY AUTOINCREMENT,
+            Nombre TEXT,
+            Telefono TEXT,
+            Tipo_Suscripcion TEXT
+        )
+    ''')
     
+    # Tabla Vehiculo
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Vehiculo (
         Placa TEXT PRIMARY KEY,
@@ -21,6 +23,7 @@ def crear_tablas():
     )
     """)
     
+    # Tabla Celda
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Celda (
         ID_Celda INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,6 +33,7 @@ def crear_tablas():
     )
     """)
     
+    # Tabla Registro
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Registro (
         ID_Registro INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,6 +47,18 @@ def crear_tablas():
         FOREIGN KEY (ID_Celda) REFERENCES Celda(ID_Celda)
     )
     """)
+    
+    # Tabla Pago
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Pago (
+            idPago INTEGER PRIMARY KEY AUTOINCREMENT,
+            idUsuario INTEGER,
+            fechaPago TEXT,
+            monto REAL,
+            metodoPago TEXT,
+            FOREIGN KEY(idUsuario) REFERENCES Usuario(idUsuario)
+        )
+    ''')
     
     conn.commit()
     conn.close()
