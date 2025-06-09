@@ -40,3 +40,12 @@ class Celda:
         cursor.execute("UPDATE Celda SET Estado = 'disponible' WHERE Nombre = ?", (nombre,))
         conn.commit()
         conn.close()
+
+    @staticmethod
+    def esta_disponible(nombre):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT Estado FROM Celda WHERE Nombre = ?", (nombre,))
+        row = cursor.fetchone()
+        conn.close()
+        return row and row[0] == 'disponible'
