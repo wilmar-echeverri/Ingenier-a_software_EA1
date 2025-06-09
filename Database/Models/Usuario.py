@@ -9,6 +9,11 @@ class Usuario:
     def registrar_usuario(self):
         conn = get_connection()
         cursor = conn.cursor()
+        # Validar que no exista usuario con mismo nombre y teléfono
+        cursor.execute("SELECT 1 FROM Usuario WHERE Nombre = ? AND Telefono = ?", (self.nombre, self.telefono))
+        if cursor.fetchone():
+            conn.close()
+            raise ValueError("Ya existe un usuario con ese nombre y teléfono.")
         cursor.execute("INSERT INTO Usuario (Nombre, Telefono, Tipo_Suscripcion) VALUES (?, ?, ?)",
                        (self.nombre, self.telefono, self.tipo_suscripcion))
         conn.commit()
