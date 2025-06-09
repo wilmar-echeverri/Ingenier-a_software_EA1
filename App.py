@@ -44,9 +44,12 @@ with st.form("form_usuario"):
     submit_usuario = st.form_submit_button("Registrar Usuario")
     if submit_usuario:
         if nombre_usuario and telefono_usuario and tipo_suscripcion:
-            u = Usuario(nombre_usuario, telefono_usuario, tipo_suscripcion)
-            u.registrar_usuario()
-            st.success(f"Usuario '{nombre_usuario}' registrado exitosamente.")
+            try:
+                u = Usuario(nombre_usuario, telefono_usuario, tipo_suscripcion)
+                u.registrar_usuario()
+                st.success(f"Usuario '{nombre_usuario}' registrado exitosamente.")
+            except ValueError as ve:
+                st.error(str(ve))
         else:
             st.warning("Por favor, complete todos los campos del usuario.")
 
@@ -95,7 +98,8 @@ with st.form("form_entrada"):
     usuario = st.selectbox("Usuario", usuarios_registrados) if usuarios_registrados else st.text_input("Usuario")
     tipo_celda = "carro" if tipo == "Carro" else "moto"
     disponibles = Celda.obtener_disponibles(tipo_celda)
-    opciones = {nombre: nombre for _, nombre in disponibles}
+    # Filtrar solo celdas realmente disponibles (no ocupadas)
+    opciones = {nombre: nombre for _, nombre in disponibles if Celda.esta_disponible(nombre)}
     celda_nombre = st.selectbox("Celda disponible", list(opciones.keys()), key="celda_input") if opciones else None
     submit = st.form_submit_button("Registrar Entrada")
 
@@ -206,14 +210,14 @@ if registrar_pago_btn:
             st.success(f"Pago registrado exitosamente para {usuario_pago}.")
             if comprobante:
                 st.markdown("""
-                <div style='border:2px solid #4CAF50; border-radius:10px; padding:20px; background-color:#f9fff9; margin-top:20px;'>
-                    <h3 style='color:#388e3c;'>Factura de Pago</h3>
-                    <b>ID Pago:</b> {idPago}<br>
-                    <b>Fecha de Pago:</b> {fechaPago}<br>
-                    <b>Usuario:</b> {nombreUsuario} (ID: {idUsuario})<br>
-                    <b>Tipo de Suscripción:</b> {tipoSuscripcion}<br>
-                    <b>Monto:</b> ${monto:.2f}<br>
-                    <b>Método de Pago:</b> {metodoPago}<br>
+                <div style='border:2px solid #4CAF50; border-radius:10px; padding:20px; background-color:#fff; margin-top:20px;'>
+                    <h3 style='color:#222;'>Factura de Pago</h3>
+                    <b style='color:#222;'>ID Pago:</b> {idPago}<br>
+                    <b style='color:#222;'>Fecha de Pago:</b> {fechaPago}<br>
+                    <b style='color:#222;'>Usuario:</b> {nombreUsuario} (ID: {idUsuario})<br>
+                    <b style='color:#222;'>Tipo de Suscripción:</b> {tipoSuscripcion}<br>
+                    <b style='color:#222;'>Monto:</b> <span style='color:#222;'>${monto:.2f}</span><br>
+                    <b style='color:#222;'>Método de Pago:</b> {metodoPago}<br>
                 </div>
                 """.format(
                     idPago=comprobante['idPago'],
