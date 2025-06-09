@@ -30,3 +30,25 @@ class Usuario:
         cursor.execute("DELETE FROM Usuario WHERE Nombre = ?", (nombre,))
         conn.commit()
         conn.close()
+
+    @staticmethod
+    def obtener_por_id(idUsuario):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT idUsuario, Nombre, Tipo_Suscripcion FROM Usuario WHERE idUsuario = ?", (idUsuario,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return {'idUsuario': row[0], 'nombre': row[1], 'tipo_suscripcion': row[2]}
+        return None
+
+    @staticmethod
+    def obtener_id_por_nombre(nombre):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT idUsuario FROM Usuario WHERE Nombre = ?", (nombre,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return row[0]
+        return None
