@@ -204,7 +204,26 @@ if registrar_pago_btn:
             id_pago = Pago.registrar_pago(id_usuario, monto_pago, metodo_pago)
             comprobante = Pago.generar_comprobante(id_pago)
             st.success(f"Pago registrado exitosamente para {usuario_pago}.")
-            st.json(comprobante)
+            if comprobante:
+                st.markdown("""
+                <div style='border:2px solid #4CAF50; border-radius:10px; padding:20px; background-color:#f9fff9; margin-top:20px;'>
+                    <h3 style='color:#388e3c;'>Factura de Pago</h3>
+                    <b>ID Pago:</b> {idPago}<br>
+                    <b>Fecha de Pago:</b> {fechaPago}<br>
+                    <b>Usuario:</b> {nombreUsuario} (ID: {idUsuario})<br>
+                    <b>Tipo de Suscripción:</b> {tipoSuscripcion}<br>
+                    <b>Monto:</b> ${monto:.2f}<br>
+                    <b>Método de Pago:</b> {metodoPago}<br>
+                </div>
+                """.format(
+                    idPago=comprobante['idPago'],
+                    fechaPago=comprobante['fechaPago'],
+                    nombreUsuario=comprobante['nombreUsuario'],
+                    idUsuario=comprobante['idUsuario'],
+                    tipoSuscripcion=comprobante['tipoSuscripcion'],
+                    monto=comprobante['monto'],
+                    metodoPago=comprobante['metodoPago']
+                ), unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Error al registrar el pago: {str(e)}")
     else:
